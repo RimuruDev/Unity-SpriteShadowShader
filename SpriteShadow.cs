@@ -30,10 +30,13 @@ namespace AbyssMoth
         [SerializeField] private Vector2 shadowOffset = new(0.1f, -0.1f);
         [SerializeField] private string shadowSortingLayerName = "Default";
         [SerializeField] private int shadowOrderInLayer = -1;
+        [SerializeField] private bool isDisposeComponent = true;
 
         [SerializeField, HideInInspector] private SpriteRenderer spriteRenderer;
         [SerializeField, HideInInspector] private GameObject shadowObject;
         [SerializeField, HideInInspector] private SpriteRenderer shadowSpriteRenderer;
+
+        private MaterialPropertyBlock propertyBlock;
 
         private void Awake()
         {
@@ -47,6 +50,25 @@ namespace AbyssMoth
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
         private void OnValidate() =>
             UpdateShadow();
+
+        private void OnDestroy()
+        {
+            if (isDisposeComponent)
+            {
+#if UNITY_EDITOR
+                if (!Application.isPlaying)
+                {
+                    DestroyImmediate(shadowObject);
+                    DestroyImmediate(shadowSpriteRenderer);
+                }
+                else
+                {
+                    Destroy(shadowObject);
+                    Destroy(shadowSpriteRenderer);
+                }
+#endif
+            }
+        }
 
         private void CreateShadowObject()
         {
@@ -86,16 +108,13 @@ namespace AbyssMoth
             }
 
             if (shadowSpriteRenderer == null)
-            {
                 CreateShadowObject();
-            }
 
             if (propertyBlock == null)
-            {
                 propertyBlock = new MaterialPropertyBlock();
-            }
 
             shadowSpriteRenderer.GetPropertyBlock(propertyBlock);
+
             if (propertyBlock == null)
             {
                 Debug.LogError("Failed to get PropertyBlock.");
@@ -110,7 +129,5 @@ namespace AbyssMoth
             shadowSpriteRenderer.sortingLayerName = shadowSortingLayerName;
             shadowSpriteRenderer.sortingOrder = shadowOrderInLayer;
         }
-
-        private MaterialPropertyBlock propertyBlock;
     }
 }
