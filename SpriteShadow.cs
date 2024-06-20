@@ -47,12 +47,30 @@ namespace AbyssMoth
         private void UpdateShadow()
         {
             if (spriteRenderer == null)
+            {
+                Debug.LogError("SpriteRenderer component is missing.");
                 return;
+            }
 
             if (spriteRenderer.sharedMaterial == null)
+            {
+                Debug.LogError("SharedMaterial is missing on SpriteRenderer.");
                 return;
+            }
+
+            if (propertyBlock == null)
+            {
+                propertyBlock = new MaterialPropertyBlock();
+            }
 
             spriteRenderer.GetPropertyBlock(propertyBlock);
+            
+            if (propertyBlock == null)
+            {
+                Debug.LogError("Failed to get PropertyBlock.");
+                return;
+            }
+
             propertyBlock.SetColor(ShadowColor, shadowColor);
             propertyBlock.SetVector(ShadowOffset, shadowOffset);
             spriteRenderer.SetPropertyBlock(propertyBlock);
