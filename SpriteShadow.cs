@@ -14,6 +14,7 @@ namespace AbyssMoth
 {
 #if UNITY_EDITOR
     [ExecuteAlways]
+    [ExecuteInEditMode]
 #endif
     [SelectionBase]
     [DisallowMultipleComponent]
@@ -27,14 +28,17 @@ namespace AbyssMoth
 
         [SerializeField] private Color shadowColor = new(0, 0, 0, 0.5f);
         [SerializeField] private Vector2 shadowOffset = new(0.1f, -0.1f);
+        [SerializeField] private string shadowSortingLayerName = "Default";
+        [SerializeField] private int shadowOrderInLayer = -1;
 
-        private SpriteRenderer spriteRenderer;
-        private MaterialPropertyBlock propertyBlock;
+        [SerializeField, HideInInspector] private SpriteRenderer spriteRenderer;
+        [SerializeField, HideInInspector] private GameObject shadowObject;
+        [SerializeField, HideInInspector] private SpriteRenderer shadowSpriteRenderer;
 
         private void Awake()
         {
             spriteRenderer = GetComponent<SpriteRenderer>();
-            propertyBlock = new MaterialPropertyBlock();
+            CreateShadowObject();
         }
 
         private void Update() =>
@@ -43,6 +47,29 @@ namespace AbyssMoth
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
         private void OnValidate() =>
             UpdateShadow();
+
+        private void CreateShadowObject()
+        {
+            if (shadowObject != null)
+                return;
+
+            shadowObject = new GameObject("Shadow")
+            {
+                transform =
+                {
+                    parent = transform,
+                    localPosition = Vector3.zero,
+                    localRotation = Quaternion.identity,
+                    localScale = Vector3.one
+                }
+            };
+
+            shadowSpriteRenderer = shadowObject.AddComponent<SpriteRenderer>();
+            shadowSpriteRenderer.sprite = spriteRenderer.sprite;
+            shadowSpriteRenderer.material = spriteRenderer.sharedMaterial;
+            shadowSpriteRenderer.sortingLayerName = shadowSortingLayerName;
+            shadowSpriteRenderer.sortingOrder = shadowOrderInLayer;
+        }
 
         private void UpdateShadow()
         {
@@ -58,13 +85,17 @@ namespace AbyssMoth
                 return;
             }
 
+            if (shadowSpriteRenderer == null)
+            {
+                CreateShadowObject();
+            }
+
             if (propertyBlock == null)
             {
                 propertyBlock = new MaterialPropertyBlock();
             }
 
-            spriteRenderer.GetPropertyBlock(propertyBlock);
-            
+            shadowSpriteRenderer.GetPropertyBlock(propertyBlock);
             if (propertyBlock == null)
             {
                 Debug.LogError("Failed to get PropertyBlock.");
@@ -73,7 +104,13 @@ namespace AbyssMoth
 
             propertyBlock.SetColor(ShadowColor, shadowColor);
             propertyBlock.SetVector(ShadowOffset, shadowOffset);
-            spriteRenderer.SetPropertyBlock(propertyBlock);
+            shadowSpriteRenderer.SetPropertyBlock(propertyBlock);
+
+            shadowSpriteRenderer.sprite = spriteRenderer.sprite;
+            shadowSpriteRenderer.sortingLayerName = shadowSortingLayerName;
+            shadowSpriteRenderer.sortingOrder = shadowOrderInLayer;
         }
+
+        private MaterialPropertyBlock propertyBlock;
     }
 }
